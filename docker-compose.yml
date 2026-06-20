@@ -7,8 +7,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-git_web_review}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-git_web_review}
       POSTGRES_DB: ${POSTGRES_DB:-git_web_review}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,8 +21,6 @@ services:
 
   redis:
     image: redis:8-alpine
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
