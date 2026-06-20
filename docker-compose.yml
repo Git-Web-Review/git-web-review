@@ -1,0 +1,146 @@
+name: git-web-review
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-git_web_review}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-git_web_review}
+      POSTGRES_DB: ${POSTGRES_DB:-git_web_review}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-git_web_review} -d ${POSTGRES_DB:-git_web_review}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-git_web_review}:${POSTGRES_PASSWORD:-git_web_review}@postgres:5432/${POSTGRES_DB:-git_web_review}
+      REDIS_URL: redis://redis:6379
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/run/secrets/firebase-service-account.json}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      ADMINS: ${ADMINS:-}
+      PROFILE_IMAGE_MAX_BYTES: ${PROFILE_IMAGE_MAX_BYTES:-1048576}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
+    ports:
+      - "${BACKEND_PORT:-3005}:3000"
+    volumes:
+      - ./secrets:/run/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "npm run prisma:push && npm run start:prod"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      PORT: 5173
+      VITE_BACKEND_URL: ${PUBLIC_BACKEND_URL:-http://localhost:3005}
+      VITE_WEBSOCKET_URL: ${PUBLIC_WEBSOCKET_URL:-ws://localhost:3001}
+      VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-}
+      VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN:-}
+      VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID:-}
+      VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID:-}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID:-}
+      VITE_FIREBASE_STORAGE_BUCKET: ${VITE_FIREBASE_STORAGE_BUCKET:-}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_started
+
+  websocket-relay:
+    build:
+      context: ./websocket-relay
+    environment:
+      PORT: 3001
+      REDIS_URL: redis://redis:6379
+      BACKEND_URL: http://backend:3000
+      REDIS_CHANNEL_PATTERN: "notifications:user:*"
+      REDIS_USER_CHANNEL_PREFIX: "notifications:user:"
+    ports:
+      - "${WEBSOCKET_RELAY_PORT:-3001}:3001"
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/health >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  irc-relay:
+    build:
+      context: ./irc-relay
+    environment:
+      REDIS_URL: redis://redis:6379
+      REDIS_CHANNEL: notifications:irc
+      FRONTEND_URL: ${PUBLIC_FRONTEND_URL:-http://localhost:5173}
+      IRC_DRY_RUN: ${IRC_DRY_RUN:-true}
+      IRC_HOST: ${IRC_HOST:-irc.company.tld}
+      IRC_PORT: ${IRC_PORT:-6697}
+      IRC_TLS: ${IRC_TLS:-true}
+      IRC_NICK: ${IRC_NICK:-git-web-review}
+      IRC_USERNAME: ${IRC_USERNAME:-git-web-review}
+      IRC_REALNAME: ${IRC_REALNAME:-git-web-review notification relay}
+      IRC_PASSWORD: ${IRC_PASSWORD:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  email-relay:
+    build:
+      context: ./email-relay
+    environment:
+      REDIS_URL: redis://redis:6379
+      REDIS_CHANNEL: notifications:email
+      FRONTEND_URL: ${PUBLIC_FRONTEND_URL:-http://localhost:5173}
+      EMAIL_DRY_RUN: ${EMAIL_DRY_RUN:-true}
+      SMTP_HOST: ${SMTP_HOST:-smtp.company.tld}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-git-web-review@company.tld}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:

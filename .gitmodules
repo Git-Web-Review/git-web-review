@@ -1,0 +1,15 @@
+[submodule "email-relay"]
+	path = email-relay
+	url = ./email-relay
+[submodule "frontend"]
+	path = frontend
+	url = ./frontend
+[submodule "backend"]
+	path = backend
+	url = ./backend
+[submodule "websocket-relay"]
+	path = websocket-relay
+	url = ./websocket-relay
+[submodule "irc-relay"]
+	path = irc-relay
+	url = ./irc-relay
