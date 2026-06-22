@@ -86,6 +86,7 @@ services:
       PORT: 3001
       REDIS_URL: redis://redis:6379
       BACKEND_URL: http://backend:3000
+      WEBSOCKET_ALLOWED_HOSTS: ${WEBSOCKET_ALLOWED_HOSTS:-}
       REDIS_CHANNEL_PATTERN: "notifications:user:*"
       REDIS_USER_CHANNEL_PREFIX: "notifications:user:"
     ports:
