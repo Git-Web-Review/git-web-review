@@ -41,6 +41,7 @@ services:
       ADMINS: ${ADMINS:-}
       PROFILE_IMAGE_MAX_BYTES: ${PROFILE_IMAGE_MAX_BYTES:-1048576}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
+      BACKEND_ALLOWED_HOSTS: ${BACKEND_ALLOWED_HOSTS:-}
     ports:
       - "${BACKEND_PORT:-3005}:3000"
     volumes:
@@ -63,6 +64,7 @@ services:
       context: ./frontend
     environment:
       PORT: 5173
+      FRONTEND_ALLOWED_HOSTS: ${FRONTEND_ALLOWED_HOSTS:-}
       VITE_BACKEND_URL: ${PUBLIC_BACKEND_URL:-http://localhost:3005}
       VITE_WEBSOCKET_URL: ${PUBLIC_WEBSOCKET_URL:-ws://localhost:3001}
       VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-}
