@@ -1,15 +1,15 @@
 [submodule "email-relay"]
 	path = email-relay
-	url = ./email-relay
+	url = https://github.com/Git-Web-Review/email-relay.git
 [submodule "frontend"]
 	path = frontend
-	url = ./frontend
+	url = https://github.com/Git-Web-Review/frontend.git
 [submodule "backend"]
 	path = backend
-	url = ./backend
+	url = https://github.com/Git-Web-Review/backend.git
 [submodule "websocket-relay"]
 	path = websocket-relay
-	url = ./websocket-relay
+	url = https://github.com/Git-Web-Review/websocket-relay.git
 [submodule "irc-relay"]
 	path = irc-relay
-	url = ./irc-relay
+	url = https://github.com/Git-Web-Review/irc-relay.git
