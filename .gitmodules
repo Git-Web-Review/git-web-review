@@ -13,3 +13,6 @@
 [submodule "irc-relay"]
 	path = irc-relay
 	url = https://github.com/Git-Web-Review/irc-relay.git
+[submodule "http-relay"]
+	path = http-relay
+	url = https://github.com/Git-Web-Review/http-relay.git

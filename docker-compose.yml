@@ -40,6 +40,9 @@ services:
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
       ADMINS: ${ADMINS:-}
       PROFILE_IMAGE_MAX_BYTES: ${PROFILE_IMAGE_MAX_BYTES:-1048576}
+      APP_LOGO_MAX_BYTES: ${APP_LOGO_MAX_BYTES:-1048576}
+      INTERNAL_JWT_SECRET: ${INTERNAL_JWT_SECRET:-}
+      INTERNAL_JWT_TTL_SECONDS: ${INTERNAL_JWT_TTL_SECONDS:-3600}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
       BACKEND_ALLOWED_HOSTS: ${BACKEND_ALLOWED_HOSTS:-}
     ports:
@@ -139,6 +142,35 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+
+  http-relay:
+    build:
+      context: ./http-relay
+    environment:
+      PORT: 3002
+      REDIS_URL: redis://redis:6379
+      REDIS_CHANNEL: notifications:webhook
+      FRONTEND_URL: ${PUBLIC_FRONTEND_URL:-http://localhost:5173}
+      HTTP_RELAY_DRY_RUN: ${HTTP_RELAY_DRY_RUN:-true}
+      WEBHOOK_WORKERS: ${WEBHOOK_WORKERS:-4}
+      WEBHOOK_QUEUE_SIZE: ${WEBHOOK_QUEUE_SIZE:-1024}
+      WEBHOOK_TIMEOUT: ${WEBHOOK_TIMEOUT:-10s}
+      WEBHOOK_MAX_ATTEMPTS: ${WEBHOOK_MAX_ATTEMPTS:-3}
+      WEBHOOK_RETRY_BASE_DELAY: ${WEBHOOK_RETRY_BASE_DELAY:-1s}
+      WEBHOOK_RETRY_MAX_DELAY: ${WEBHOOK_RETRY_MAX_DELAY:-30s}
+      WEBHOOK_ALLOWED_HOSTS: ${WEBHOOK_ALLOWED_HOSTS:-}
+      WEBHOOK_BLOCK_PRIVATE_NETWORKS: ${WEBHOOK_BLOCK_PRIVATE_NETWORKS:-false}
+    ports:
+      - "${HTTP_RELAY_PORT:-3002}:3002"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://127.0.0.1:3002/health >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
 
 volumes:
   postgres_data:
