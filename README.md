@@ -252,6 +252,15 @@ The `http-relay` service does the sending. It subscribes to
 around the backend's `payload`, forwarded untouched. It does no formatting and
 has no templates: presenting the notification is the receiving end's job.
 
+Comment notifications reach everyone on the review: a new thread or a reply
+goes to the owner, the reviewers (service accounts included) and earlier
+authors of the thread, never to its author; a mentioned user gets
+`COMMENT_MENTION` instead. Resolving or reopening a thread (`COMMENT_RESOLVED`)
+and acking or unacking one commit (`COMMIT_ACKED`) go to the owner and the
+reviewers. Each payload says in which role the user receives it
+(`recipientRole`); the per-event fields are listed in the
+[`http-relay` README](http-relay/README.md#comment-and-ack-events).
+
 Deliveries retry on transport errors, `429` and `5xx` with exponential backoff;
 other `4xx` are dropped as permanent. `HTTP_RELAY_DRY_RUN=true` logs the
 requests instead of sending them.
